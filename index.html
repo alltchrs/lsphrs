@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>LSP Hasnur Riung Sinergi — Sertifikasi Kompetensi BNSP</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=Source+Sans+3:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="styles.css" />
+<style>
+  .vp-switch{position:fixed;left:16px;bottom:16px;z-index:200;display:flex;background:#151650;border-radius:99px;padding:4px;box-shadow:0 8px 24px rgba(0,0,0,.2)}
+  .vp-switch button{background:none;border:0;color:#BFC2EC;font:600 12px 'Public Sans',sans-serif;padding:8px 14px;border-radius:99px;cursor:pointer}
+  .vp-switch button.on{background:#fff;color:#151650}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="data.js"></script>
+<script type="text/babel" src="tweaks_panel.jsx"></script>
+<script type="text/babel" src="shell.jsx"></script>
+<script type="text/babel" src="pages-a.jsx"></script>
+<script type="text/babel" src="pages-b.jsx"></script>
+<script type="text/babel">
+const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+  "variasi": "A",
+  "accent": "#00A0E3",
+  "font": "Public Sans",
+  "hero": "split",
+  "viewport": "desktop"
+}/*EDITMODE-END*/;
+
+function App() {
+  const [t, setTweak] = useTweaks(TWEAK_DEFAULTS);
+  const [page, setPage] = React.useState(() => localStorage.getItem("lsphrs-page") || "home");
+  const scroller = React.useRef(null);
+  const go = (p) => { setPage(p); localStorage.setItem("lsphrs-page", p); window.scrollTo(0, 0); if (scroller.current) scroller.current.scrollTop = 0; };
+  const [base, a1, a2] = page.split(":");
+  const mobile = t.viewport === "mobile";
+
+  let view;
+  switch (base) {
+    case "skema": view = <SkemaList go={go} />; break;
+    case "detail": view = <SkemaDetail key={a1} id={a1} go={go} />; break;
+    case "jadwal": view = <Jadwal go={go} />; break;
+    case "daftar": view = <Daftar key={page} go={go} preSkema={a1} preTgl={a2} />; break;
+    case "cek": view = <CekSertifikat key={page} go={go} initial={a1} />; break;
+    case "profil": view = <Profil go={go} />; break;
+    case "tuk": view = <TukPage go={go} />; break;
+    case "asesor": view = <AsesorPage go={go} />; break;
+    case "berita": view = <BeritaPage go={go} />; break;
+    case "kontak": view = <Kontak go={go} />; break;
+    default: view = <Home go={go} layout={t.hero} />;
+  }
+
+  const vars = { "--accent": t.accent, "--ff": `'${t.font}', sans-serif` };
+  return (
+    <>
+      <div className={"frame" + (mobile ? " mobile" : "")} style={mobile ? { height: "calc(100vh - 48px)" } : {}}>
+        <div ref={scroller} className={"site v-" + t.variasi.toLowerCase()} style={{ ...vars, fontFamily: "var(--ff)", ...(mobile ? { height: "100%", overflowY: "auto" } : {}) }} data-screen-label={base}>
+          <Header page={page} go={go} />
+          <main>{view}</main>
+          <Footer go={go} />
+        </div>
+      </div>
+      <div className="vp-switch">
+        <button className={!mobile ? "on" : ""} onClick={() => setTweak("viewport", "desktop")}>Desktop</button>
+        <button className={mobile ? "on" : ""} onClick={() => setTweak("viewport", "mobile")}>Mobile</button>
+      </div>
+      <TweaksPanel>
+        <TweakSection label="Variasi desain">
+          <TweakRadio label="Gaya" value={t.variasi} options={[{ value: "A", label: "A · Institusional" }, { value: "B", label: "B · Navy Imersif" }]} onChange={v => setTweak("variasi", v)} />
+        </TweakSection>
+        <TweakSection label="Hero beranda">
+          <TweakRadio label="Layout" value={t.hero} options={[{ value: "split", label: "Split" }, { value: "center", label: "Tengah" }, { value: "full", label: "Foto penuh" }]} onChange={v => { setTweak("hero", v); go("home"); }} />
+        </TweakSection>
+        <TweakSection label="Warna & tipografi">
+          <TweakColor label="Aksen (dari logo)" value={t.accent} options={["#00A0E3", "#E3262B", "#00964B", "#2E3192"]} onChange={v => setTweak("accent", v)} />
+          <TweakSelect label="Font" value={t.font} options={["Public Sans", "Plus Jakarta Sans", "IBM Plex Sans", "Source Sans 3"]} onChange={v => setTweak("font", v)} />
+        </TweakSection>
+        <TweakSection label="Tampilan">
+          <TweakRadio label="Viewport" value={t.viewport} options={[{ value: "desktop", label: "Desktop" }, { value: "mobile", label: "Mobile" }]} onChange={v => setTweak("viewport", v)} />
+        </TweakSection>
+      </TweaksPanel>
+    </>
+  );
+}
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>
